@@ -55,7 +55,7 @@ const contactSchema = z.object({
         .email({message:"Invalid Email Id"})
         .min(3, {message:"Email must be at least of 3 characters" })
         .max(255, {message:"Email must not be more than 255 characters"}),
-    });    
+});    
 
 //classmaster
     const classmasterSchema = z.object({
