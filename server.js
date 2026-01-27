@@ -1,6 +1,5 @@
 require("dotenv").config();
 
-
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -12,7 +11,7 @@ const port = process.env.PORT || 8000;
 const connectDB = require("./utils/db");
 const templateRoute = require("./router/template-router");
 
-const statusMointor = require("express-status-monitor")
+const statusMointor = require("express-status-monitor");
 
 // Routes
 const authRoute = require("./router/auth-router");
@@ -23,17 +22,15 @@ const sectiontemplateRoute = require("./router/sectiontemplate-router");
 const genreMasterRoute = require("./router/genremaster-router");
 const roleRoute = require("./router/role-router");
 
-
 const movievRoute = require("./router/moviev-router");
 const seriesRoute = require("./router/series-router");
 const electionRoute = require("./router/election-router");
 const positionsRoute = require("./router/positions-router");
-const userManagementRoute = require("./router/usermanagement-router")
+const userManagementRoute = require("./router/usermanagement-router");
 
 const celebratyRoute = require("./router/celebraty-router");
 const timelineRoute = require("./router/timeline-router");
 const sectionmasterRoute = require("./router/sectionmaster-router");
-
 
 const triviaentriesRoute = require("./router/triviaentries-router");
 
@@ -43,34 +40,32 @@ const professionalmasterRoute = require("./router/professionalmaster-router");
 const testimonialsRoute = require("./router/testimonials-router");
 const dashboardRoute = require("./router/dashboard-router");
 
-const privilegesRoutes = require("./router/privilege-router")
-
+const privilegesRoutes = require("./router/privilege-router");
 
 const { default: globalErrorHandler } = require("./middlewares/error.middleware");
 const trackActivity = require("./middlewares/trackActivity");
 const ckeditorRoute = require("./router/ckeditor-router");
 
-
+// ====================
 // ✅ 1️⃣ CORS — MUST BE FIRST MIDDLEWARE
+// ====================
 const corsOptions = {
-  origin: "https://wefanss-frontend.vercel.app", //
+  origin: "https://wefanss-frontend.vercel.app", 
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   credentials: true,
 };
-
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // ✅ Handle preflight requests
+app.options("*", cors(corsOptions)); // Handle preflight requests
 
-
+// ====================
 // ✅ 2️⃣ Body Parsers
+// ====================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-
-
-
-
-// ✅ Static Files
+// ====================
+// ✅ 3️⃣ Static Files
+// ====================
 app.use('/professionalmaster', express.static(path.join(__dirname, 'public/professionalmaster')));
 app.use('/celebraty', express.static(path.join(__dirname, 'public/celebraty')));
 app.use('/timeline', express.static(path.join(__dirname, 'public/timeline')));
@@ -86,37 +81,44 @@ app.use('/sectionmaster', express.static(path.join(__dirname, 'public/sectionmas
 app.use('/profile', express.static(path.join(__dirname, 'public/profile')));
 app.use('/testimonial', express.static(path.join(__dirname, 'public/testimonial')));
 
-// ✅ API Routes
-app.use("/api/auth", trackActivity, authRoute);
+// ====================
+// ✅ 4️⃣ Middleware-safe wrapper for trackActivity
+// ====================
+const safeTrackActivity = (req, res, next) => {
+  if (req.method === "OPTIONS") return next(); // Skip preflight
+  trackActivity(req, res, next);
+};
+
+// ====================
+// ✅ 5️⃣ API Routes
+// ====================
+app.use("/api/auth", safeTrackActivity, authRoute);
 app.use("/api/professionalmaster", professionalmasterRoute);
 app.use("/api/template", templateRoute);
-app.use("/api/language",trackActivity, languageRoute);
+app.use("/api/language", safeTrackActivity, languageRoute);
 app.use("/api/triviaTypes", triviaTypesRoute);
 app.use("/api/celebraty", celebratyRoute);
-app.use("/api/timeline",timelineRoute);
-app.use("/api/triviaentries",triviaentriesRoute);
+app.use("/api/timeline", timelineRoute);
+app.use("/api/triviaentries", triviaentriesRoute);
 app.use("/api/moviev", movievRoute);
 app.use("/api/series", seriesRoute);
 app.use("/api/election", electionRoute);
 app.use("/api/positions", positionsRoute);
-app.use("/api/sectionmaster",sectionmasterRoute);
+app.use("/api/sectionmaster", sectionmasterRoute);
 app.use("/api/sectiontemplate", sectiontemplateRoute);
-app.use("/api/privileges",privilegesRoutes)
-
-app.use("/api/socialLink",socialLinkRoute);
-app.use("/api/genreMaster",genreMasterRoute);
+app.use("/api/privileges", privilegesRoutes);
+app.use("/api/socialLink", socialLinkRoute);
+app.use("/api/genreMaster", genreMasterRoute);
 app.use("/api/roles", roleRoute);
-
 app.use("/api/profile", profileRoute);
 app.use("/api/testimonial", testimonialsRoute);
-app.use("/api/dashboard",dashboardRoute);
-app.use("/api/users",userManagementRoute)
+app.use("/api/dashboard", dashboardRoute);
+app.use("/api/users", userManagementRoute);
+app.use("/api/ckeditor", ckeditorRoute);
 
-
-app.use("/api/ckeditor",ckeditorRoute)
-
-
-
+// ====================
+// ✅ 6️⃣ Health Checks
+// ====================
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "OK",
@@ -127,8 +129,6 @@ app.get("/health", (req, res) => {
 
 app.get("/health/details", async (req, res) => {
   try {
-   
-
     res.status(200).json({
       status: "OK",
       uptime: process.uptime(),
@@ -144,10 +144,16 @@ app.get("/health/details", async (req, res) => {
   }
 });
 
+// ====================
+// ✅ 7️⃣ Error Handler
+// ====================
 app.use(globalErrorHandler);
 
-connectDB().then( ()=>{
-    app.listen(port, () =>{
-        console.log(`server is running at port no ${port}`);
-    });
+// ====================
+// ✅ 8️⃣ Start Server
+// ====================
+connectDB().then(() => {
+  app.listen(port, () => {
+    console.log(`Server is running at port ${port}`);
+  });
 });
