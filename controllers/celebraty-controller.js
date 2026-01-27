@@ -362,20 +362,47 @@ const updateStatus = async (req, res) => {
 const updatecelebraty = async (req, res) => {
   try {
     const id = req.params.id;
-    const {
+    let {
       name,
       slug,
       shortinfo,
       biography,
       statusnew,
-       gender,
-       dob,
+      gender,
+      dob,
       professions,
       languages,
       oldGallery,
       socialLinks,
-      removeOldImage, // ✅ from frontend
+      removeOldImage,
     } = req.body;
+
+    // ✅ INSTANT FIX - Parse professions and languages if they're strings
+    if (typeof professions === 'string') {
+      try {
+        professions = JSON.parse(professions);
+        // Handle double stringification
+        if (typeof professions === 'string') {
+          professions = JSON.parse(professions);
+        }
+      } catch (e) {
+        console.error("Error parsing professions:", e);
+        professions = [];
+      }
+    }
+
+    if (typeof languages === 'string') {
+      try {
+        languages = JSON.parse(languages);
+        // Handle double stringification
+        if (typeof languages === 'string') {
+          languages = JSON.parse(languages);
+        }
+      } catch (e) {
+        console.error("Error parsing languages:", e);
+        languages = [];
+      }
+    }
 
     // ✅ Fetch existing record first
     const existingCelebraty = await Celebraty.findById(id);
@@ -410,7 +437,7 @@ const updatecelebraty = async (req, res) => {
         );
         if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
       }
-      profileImage = ""; // ✅ clear from DB
+      profileImage = "";
     }
 
     // ✅ Handle new gallery uploads
@@ -447,14 +474,14 @@ const updatecelebraty = async (req, res) => {
       shortinfo,
       biography,
       statusnew,
-       gender,
-        dob,
-      professions,
-      languages,
+      gender,
+      dob,
+      professions,  // ✅ Now properly parsed
+      languages,    // ✅ Now properly parsed
       url,
       socialLinks: parsedSocialLinks,
       gallery: mergedGallery,
-      image: profileImage, // ✅ always included (can be "")
+      image: profileImage,
       updatedAt: new Date(),
     };
 
