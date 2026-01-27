@@ -12,8 +12,8 @@ const { STATIC_ROLES, STATIC_PRIVILEGES } = require('../config/role-config');
 const STATIC_USERS = {
   SUPER_ADMIN: {
     name: 'Super Admin',
-    email: 'abhishekreact.dev@gmail.com',
-    password: 'Abhishek@123',
+    email: 'suman@digihost.in',
+    password: 'Suman@123',
     role: STATIC_ROLES.SUPER_ADMIN,
     isVerified: true,
     isActive: true
@@ -150,7 +150,7 @@ const seedStaticData = async () => {
 
 // Execute
 const run = async () => {
-  const DB_URI = "mongodb://127.0.0.1:27017/wefans-dev";
+  const DB_URI = "mongodb+srv://abhishekreactdev:Abhishek8928@cluster0.ap5am.mongodb.net/wefanss-prod";
 
   try {
     await mongoose.connect(DB_URI);

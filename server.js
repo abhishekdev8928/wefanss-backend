@@ -51,17 +51,10 @@ const trackActivity = require("./middlewares/trackActivity");
 const ckeditorRoute = require("./router/ckeditor-router");
 
 
-<<<<<<< HEAD
 // ✅ 1️⃣ CORS — MUST BE FIRST MIDDLEWARE
 const corsOptions = {
   origin: "https://wefanss-frontend.vercel.app", //
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-=======
-console.log(process.env.FRONTEND_URL)
-const corsOptions = {
- origin: "https://wefans-frontend.vercel.app",
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
->>>>>>> d4bc95d (v2)
   credentials: true,
 };
 
