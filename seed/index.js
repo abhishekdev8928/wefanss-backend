@@ -150,7 +150,7 @@ const seedStaticData = async () => {
 
 // Execute
 const run = async () => {
-  const DB_URI = "mongodb+srv://abhishekreactdev:Abhishek8928@cluster0.ap5am.mongodb.net/wefanss-prod";
+  const DB_URI = "mongodb://127.0.0.1:27017/wefans-dev";
 
   try {
     await mongoose.connect(DB_URI);
