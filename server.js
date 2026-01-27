@@ -50,7 +50,7 @@ const ckeditorRoute = require("./router/ckeditor-router");
 // ✅ 1️⃣ CORS — MUST BE FIRST MIDDLEWARE
 // ====================
 const corsOptions = {
-  origin: "https://wefanss-frontend.vercel.app", 
+  origin: "*", 
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   credentials: true,
 };
