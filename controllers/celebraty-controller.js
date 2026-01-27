@@ -11,7 +11,7 @@ const { Triviaentries } = require("../models/triviaentries-model");
 const { SectionTemplate } = require("../models/sectiontemplate-model");
 const SectionMaster = require("../models/sectionmaster-model");
 const CelebratySection = require("../models/celebratysection-model");
-
+const Professions = require('../models/professionalmaster-model'); 
 const fs = require("fs");
 const path = require("path");
 
@@ -359,6 +359,9 @@ const updateStatus = async (req, res) => {
 
 //update
 
+
+
+
 const updatecelebraty = async (req, res) => {
   try {
     const id = req.params.id;
@@ -377,11 +380,9 @@ const updatecelebraty = async (req, res) => {
       removeOldImage,
     } = req.body;
 
-    // ✅ INSTANT FIX - Parse professions and languages if they're strings
     if (typeof professions === 'string') {
       try {
         professions = JSON.parse(professions);
-        // Handle double stringification
         if (typeof professions === 'string') {
           professions = JSON.parse(professions);
         }
@@ -394,7 +395,6 @@ const updatecelebraty = async (req, res) => {
     if (typeof languages === 'string') {
       try {
         languages = JSON.parse(languages);
-        // Handle double stringification
         if (typeof languages === 'string') {
           languages = JSON.parse(languages);
         }
@@ -404,18 +404,14 @@ const updatecelebraty = async (req, res) => {
       }
     }
 
-    // ✅ Fetch existing record first
     const existingCelebraty = await Celebraty.findById(id);
     if (!existingCelebraty) {
       return res.status(404).json({ status: false, msg: "Celebraty not found" });
     }
 
-    // ✅ Handle profile image
     let profileImage = existingCelebraty.image;
 
-    // Case 1: If new image uploaded
     if (req.files?.image?.[0]) {
-      // delete old image if it exists
       if (existingCelebraty.image) {
         const oldImagePath = path.join(
           __dirname,
@@ -426,8 +422,6 @@ const updatecelebraty = async (req, res) => {
       }
       profileImage = req.files.image[0].filename;
     }
-
-    // Case 2: If old image manually removed
     else if (removeOldImage === "true") {
       if (existingCelebraty.image) {
         const oldImagePath = path.join(
@@ -440,12 +434,10 @@ const updatecelebraty = async (req, res) => {
       profileImage = "";
     }
 
-    // ✅ Handle new gallery uploads
     const newGalleryImages = req.files?.gallery
       ? req.files.gallery.map((file) => file.filename)
       : [];
 
-    // ✅ Merge old + new gallery
     let mergedGallery = [];
     if (oldGallery) {
       try {
@@ -456,10 +448,8 @@ const updatecelebraty = async (req, res) => {
     }
     mergedGallery = [...mergedGallery, ...newGalleryImages];
 
-    // ✅ Clean URL
     const url = createCleanUrl(name);
 
-    // ✅ Parse social links safely
     let parsedSocialLinks = [];
     try {
       parsedSocialLinks = socialLinks ? JSON.parse(socialLinks) : [];
@@ -467,7 +457,6 @@ const updatecelebraty = async (req, res) => {
       console.error("Invalid socialLinks JSON:", err);
     }
 
-    // ✅ Prepare update data
     const updateData = {
       name,
       slug,
@@ -476,8 +465,8 @@ const updatecelebraty = async (req, res) => {
       statusnew,
       gender,
       dob,
-      professions,  // ✅ Now properly parsed
-      languages,    // ✅ Now properly parsed
+      professions,
+      languages,
       url,
       socialLinks: parsedSocialLinks,
       gallery: mergedGallery,
@@ -489,6 +478,31 @@ const updatecelebraty = async (req, res) => {
       new: true,
     });
 
+    // ✅ Sync celebrity sections for ALL professions
+    if (professions && professions.length > 0) {
+      for (const professionId of professions) {
+        try {
+          // ✅ Get profession data with sectiontemplate array
+          const profession = await Professions.findById(professionId);
+
+          if (!profession) {
+            console.log(`⚠️ Profession not found: ${professionId}`);
+            continue;
+          }
+
+          console.log(`🔍 Found profession: ${profession.name} with ${profession.sectiontemplate?.length || 0} templates`);
+
+          // ✅ Sync using the sectiontemplate array from profession
+          if (profession.sectiontemplate && profession.sectiontemplate.length > 0) {
+            await syncCelebritySections(professionId, profession.sectiontemplate, id);
+            console.log(`✅ Synced ${profession.sectiontemplate.length} templates for profession: ${profession.name}`);
+          }
+        } catch (syncError) {
+          console.error(`❌ Error syncing profession ${professionId}:`, syncError);
+        }
+      }
+    }
+
     res.status(200).json({
       status: true,
       msg: "Celebraty updated successfully",
@@ -499,7 +513,6 @@ const updatecelebraty = async (req, res) => {
     res.status(500).json({ status: false, msg: "Server error", error });
   }
 };
-
 //get table data
 
 const getdata = async (req, res) => {
