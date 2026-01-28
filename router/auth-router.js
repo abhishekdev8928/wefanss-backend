@@ -15,7 +15,8 @@ const {
 } = require("../shared/schema/auth-schema");
 const validate = require("../middlewares/validate.middleware");
 const authenticate = require("../middlewares/auth-middleware");
-
+const {checkPrivilege }= require("../middlewares/privilege-middleware");
+const { RESOURCES, OPERATIONS } = require("../utils/constant/privilege-constant");
 // ==================== PUBLIC ROUTES ====================
 
 /**
@@ -26,6 +27,8 @@ const authenticate = require("../middlewares/auth-middleware");
 router.post(
   "/register",
   validate(registerSchema),
+  authenticate,
+  checkPrivilege(RESOURCES.USERS, OPERATIONS.CREATE),
   authControllers.registerUser
 );
 

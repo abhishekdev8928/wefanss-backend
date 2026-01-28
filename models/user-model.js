@@ -27,7 +27,7 @@ const userSchema = new mongoose.Schema(
     },
 
    
-     roleId: {
+     role: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Role",
     
@@ -124,15 +124,16 @@ userSchema.methods.comparePassword = async function (password) {
 userSchema.methods.generateToken = function () {
   return jwt.sign(
     {
-      sub: this._id.toString(), // 👈 Use 'sub' - JWT standard
+      sub: this._id.toString(),      
       email: this.email,
       name: this.name,
-      role: this.role,
+      roleId: this.roleId?.toString(), 
     },
     process.env.JWT_SECRET_KEY,
     { expiresIn: "12h" }
   );
 };
+
 
 // Generate Refresh Token with tracking
 userSchema.methods.generateRefreshToken = function (ip, device) {

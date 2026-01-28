@@ -9,13 +9,13 @@ const professionalmasterchema = new Schema({
   createdAt: { type: String },
   createdBy: { type: String },
   image: { type: String },
-  // ✅ New field for multiple section templates
+ 
   sectiontemplate: [
     {
       type: Schema.Types.ObjectId,
-      ref: "SectionTemplate", // Must match your SectionTemplate model name
+      ref: "SectionTemplate", 
     },
   ],
 });
 
-module.exports = model("professionalmaster", professionalmasterchema); // ✅ default export
+module.exports = model("professionalmaster", professionalmasterchema);

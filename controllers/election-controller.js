@@ -1,3 +1,4 @@
+const { default: mongoose } = require("mongoose");
 const { Election } = require("../models/election-model");
 const { Language } = require("../models/language-model");
 
@@ -60,6 +61,10 @@ const formatDateDMY = (date) => {
       sort,
       statusnew,
     } = req.body;
+
+    // if(!mongoose.Types.ObjectId.isValid(celebrityId)){
+    //   throw new Error("Invalid mongoose id")
+    // }
 
     // ✅ Single image or video upload
     const mediaFile = req.files?.image?.[0]
@@ -133,6 +138,9 @@ const formatDateDMY = (date) => {
 const updateStatus = async (req, res) => {
   try {
     const { status, id } = req.body;
+
+
+
 
     const result = await Election.updateOne(
       { _id: id },

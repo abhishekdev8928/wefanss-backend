@@ -28,6 +28,7 @@ const electionSchema = new Schema({
   sort: { type: String },
   statusnew: { type: String},
   status: { type: String, default: "1" },
+  
 
   // 🌐 Relations
   celebrityId: { type: String, required: true },
@@ -41,7 +42,7 @@ const electionSchema = new Schema({
   url: { type: String },
 
   
-});
+} );
 
 const Election = model("election", electionSchema);
 module.exports = { Election };

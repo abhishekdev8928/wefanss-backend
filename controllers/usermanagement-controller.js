@@ -27,16 +27,21 @@ const getAllUsers = async (req, res) => {
     // Calculate pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // Execute query
-    const [users, totalUsers] = await Promise.all([
-      User.find(filter)
-        .select("-password -totpSecret -emailOtp -passwordResetOtp -refreshTokens +totpQrCode")
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(parseInt(limit))
-        .lean(),
-      User.countDocuments(filter),
-    ]);
+    const users = await User.find(filter)
+      .select(
+        "-password -totpSecret -emailOtp -passwordResetOtp -refreshTokens +totpQrCode",
+      )
+      .populate({
+        path: "roleId",
+        match: { is_system: true },
+        select: "name is_system",
+      })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    console.log(users);
 
     // Log activity
     await logActivity({
@@ -60,8 +65,7 @@ const getAllUsers = async (req, res) => {
         users,
         pagination: {
           currentPage: parseInt(page),
-          totalPages: Math.ceil(totalUsers / parseInt(limit)),
-          totalUsers,
+          totalPages: Math.ceil(users.length / parseInt(limit)),
           limit: parseInt(limit),
         },
       },
@@ -93,7 +97,6 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-
 /**
  * Get single user by ID
  */
@@ -102,7 +105,7 @@ const getUserById = async (req, res) => {
     const { id } = req.params;
 
     const user = await User.findById(id).select(
-      "-password -totpSecret -emailOtp -passwordResetOtp -refreshTokens "
+      "-password -totpSecret -emailOtp -passwordResetOtp -refreshTokens ",
     );
 
     if (!user) {

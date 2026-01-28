@@ -1,138 +1,62 @@
 const Privilege = require("../models/previlege-model");
+const RoleModel = require("../models/role-model");
 const User = require("../models/user-model")
+
+
+
 const getUserPrivileges = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { roleId } = req.user;
 
-    console.log('Fetching user:', userId);
-
-    // Step 1: User ko fetch karo with role
-    const user = await User.findById(userId)
-      .populate('roleId')
+    const role = await RoleModel.findById(roleId)
+      .select("name slug")
       .lean();
-      
-    console.log('User fetched:', user);
 
-    if (!user) {
+    if (!role) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: "Role not found"
       });
     }
 
-    // Check if roleId exists and is populated
-    if (!user.roleId) {
-      return res.status(404).json({
-        success: false,
-        message: 'User has no role assigned'
-      });
-    }
-
-    console.log('User roleId:', user.roleId);
-
-    // Step 2: Privilege table se permissions fetch karo
     const privilegeData = await Privilege.findOne({
-      roleId: user.roleId._id || user.roleId, // Handle both populated and non-populated
+      roleId,
       isActive: true
-    }).lean();
-
-    console.log('Privilege Data:', privilegeData);
+    }).select("permissions").lean();
 
     if (!privilegeData) {
       return res.status(404).json({
         success: false,
-        message: 'No privileges found for this role'
+        message: "No privileges found for this role"
       });
     }
 
-    // Step 3: Accessible modules extract karo
+    // 🔥 Fast module-level access list
     const accessibleModules = privilegeData.permissions.map(p => p.resource);
 
-    // Step 4: Permission map banao (easy frontend access ke liye)
-    const permissionsMap = {};
-    privilegeData.permissions.forEach(permission => {
-      permissionsMap[permission.resource] = permission.operations;
-    });
-
-    // Step 5: Helper function - check karo ki operation allowed hai ya nahi
-    const hasPermission = (resource, operation) => {
-      return permissionsMap[resource]?.includes(operation) || false;
-    };
-
-    // Handle both populated and non-populated roleId
-    const roleData = user.roleId._id ? user.roleId : {
-      _id: user.roleId,
-      name: 'Unknown',
-      slug: 'unknown',
-      is_system: false,
-      status: 1
-    };
-
-    // Step 6: Complete response
     return res.status(200).json({
       success: true,
       data: {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email
-        },
-        role: {
-          id: roleData._id,
-          name: roleData.name,
-          slug: roleData.slug,
-          isSystem: roleData.is_system,
-          isActive: roleData.status === 1
-        },
-        // Accessible modules list
-        accessibleModules,
-        
-        // Complete privilege data from privilege table
-        privileges: {
-          id: privilegeData._id,
-          role: privilegeData.role,
-          permissions: privilegeData.permissions,
-          isActive: privilegeData.isActive,
-          isLocked: privilegeData.isLocked,
-          createdAt: privilegeData.createdAt,
-          updatedAt: privilegeData.updatedAt
-        },
-
-        // Easy-to-use permissions map
-        permissionsMap,
-
-        // Helper data for frontend
-        meta: {
-          totalModules: accessibleModules.length,
-          canCreate: accessibleModules.filter(m => 
-            hasPermission(m, 'create')
-          ),
-          canUpdate: accessibleModules.filter(m => 
-            hasPermission(m, 'update')
-          ),
-          canDelete: accessibleModules.filter(m => 
-            hasPermission(m, 'delete')
-          ),
-          canPublish: accessibleModules.filter(m => 
-            hasPermission(m, 'publish')
-          )
-        }
+        role,
+        accessibleModules,        // 👈 quick module access check
+        permissions: privilegeData.permissions // 👈 detailed operations
       }
     });
 
   } catch (error) {
-    console.error('Error fetching user privileges:', error);
+    console.error("Error fetching privileges:", error);
     return res.status(500).json({
       success: false,
-      message: 'Internal server error',
-      error: error.message
+      message: "Internal server error"
     });
   }
 };
 
-module.exports = {
-  getUserPrivileges
-};
+
+
+
+
+ 
 
 
 /**

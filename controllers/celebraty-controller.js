@@ -32,9 +32,6 @@ const addcelebraty = async (req, res) => {
       statusnew,
       gender,
       dob,
-      professions,
-      languages,
-      socialLinks,
       createdBy,
     } = req.body;
 
@@ -58,25 +55,60 @@ const addcelebraty = async (req, res) => {
         .json({ msg: "Celebraty with this name already exists" });
     }
 
-    // 🔹 Parse social links safely
-    let parsedSocialLinks = [];
-    try {
-      parsedSocialLinks = socialLinks ? JSON.parse(socialLinks) : [];
-    } catch (err) {
-      console.error("Invalid socialLinks JSON:", err);
-    }
-
-    // 🔹 Parse professions safely
+    // ✅ Parse professions safely - FIX FOR DOUBLE STRINGIFICATION
     let parsedProfessions = [];
     try {
-      if (typeof professions === "string") {
-        parsedProfessions = JSON.parse(professions);
-      } else if (Array.isArray(professions)) {
-        parsedProfessions = professions;
+      if (typeof req.body.professions === "string") {
+        const firstParse = JSON.parse(req.body.professions);
+        // Check if it's double stringified
+        if (typeof firstParse === "string") {
+          parsedProfessions = JSON.parse(firstParse);
+        } else if (Array.isArray(firstParse)) {
+          parsedProfessions = firstParse;
+        }
+      } else if (Array.isArray(req.body.professions)) {
+        parsedProfessions = req.body.professions;
       }
     } catch (err) {
       console.error("Invalid professions JSON:", err);
       parsedProfessions = [];
+    }
+
+    // ✅ Parse languages safely - FIX FOR DOUBLE STRINGIFICATION
+    let parsedLanguages = [];
+    try {
+      if (typeof req.body.languages === "string") {
+        const firstParse = JSON.parse(req.body.languages);
+        // Check if it's double stringified
+        if (typeof firstParse === "string") {
+          parsedLanguages = JSON.parse(firstParse);
+        } else if (Array.isArray(firstParse)) {
+          parsedLanguages = firstParse;
+        }
+      } else if (Array.isArray(req.body.languages)) {
+        parsedLanguages = req.body.languages;
+      }
+    } catch (err) {
+      console.error("Invalid languages JSON:", err);
+      parsedLanguages = [];
+    }
+
+    // ✅ Parse social links safely
+    let parsedSocialLinks = [];
+    try {
+      if (typeof req.body.socialLinks === "string") {
+        const firstParse = JSON.parse(req.body.socialLinks);
+        if (typeof firstParse === "string") {
+          parsedSocialLinks = JSON.parse(firstParse);
+        } else if (Array.isArray(firstParse)) {
+          parsedSocialLinks = firstParse;
+        }
+      } else if (Array.isArray(req.body.socialLinks)) {
+        parsedSocialLinks = req.body.socialLinks;
+      }
+    } catch (err) {
+      console.error("Invalid socialLinks JSON:", err);
+      parsedSocialLinks = [];
     }
 
     // 🔹 Save celebrity FIRST
@@ -88,9 +120,9 @@ const addcelebraty = async (req, res) => {
       statusnew,
       gender,
       dob,
-      professions: parsedProfessions, // ✅ Save parsed professions
-      languages,
-      socialLinks: parsedSocialLinks,
+      professions: parsedProfessions,   // ✅ Pure array
+      languages: parsedLanguages,        // ✅ Pure array (FIXED)
+      socialLinks: parsedSocialLinks,    // ✅ Pure array
       createdAt,
       status: "1",
       url,
@@ -131,6 +163,7 @@ const addcelebraty = async (req, res) => {
     res.status(500).json({ msg: "Internal Server Error" });
   }
 };
+
 
 function createCleanUrl(title) {
   // Convert the title to lowercase
@@ -576,12 +609,12 @@ const deletecelebraty = async (req, res) => {
   }
 };
 
-//for edit
 
-// backend: controller
 const getcelebratyByid = async (req, res) => {
   try {
     const project = await Celebraty.findOne({ _id: req.params.id });
+
+    console.log(project)
 
     if (!project) {
       return res.status(404).json({ msg: "No Data Found" });

@@ -46,26 +46,21 @@ const { default: globalErrorHandler } = require("./middlewares/error.middleware"
 const trackActivity = require("./middlewares/trackActivity");
 const ckeditorRoute = require("./router/ckeditor-router");
 
-// ====================
-// ✅ 1️⃣ CORS — MUST BE FIRST MIDDLEWARE
-// ====================
+
 const corsOptions = {
-  origin: "https://wefanss-frontend.vercel.app", 
+  origin: process.env.FRONTEND_URL, 
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   credentials: true,
 };
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // Handle preflight requests
 
-// ====================
-// ✅ 2️⃣ Body Parsers
-// ====================
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ====================
-// ✅ 3️⃣ Static Files
-// ====================
+
 app.use('/professionalmaster', express.static(path.join(__dirname, 'public/professionalmaster')));
 app.use('/celebraty', express.static(path.join(__dirname, 'public/celebraty')));
 app.use('/timeline', express.static(path.join(__dirname, 'public/timeline')));
@@ -81,17 +76,12 @@ app.use('/sectionmaster', express.static(path.join(__dirname, 'public/sectionmas
 app.use('/profile', express.static(path.join(__dirname, 'public/profile')));
 app.use('/testimonial', express.static(path.join(__dirname, 'public/testimonial')));
 
-// ====================
-// ✅ 4️⃣ Middleware-safe wrapper for trackActivity
-// ====================
+
 const safeTrackActivity = (req, res, next) => {
   if (req.method === "OPTIONS") return next(); // Skip preflight
   trackActivity(req, res, next);
 };
 
-// ====================
-// ✅ 5️⃣ API Routes
-// ====================
 app.use("/api/auth", safeTrackActivity, authRoute);
 app.use("/api/professionalmaster", professionalmasterRoute);
 app.use("/api/template", templateRoute);
@@ -116,9 +106,7 @@ app.use("/api/dashboard", dashboardRoute);
 app.use("/api/users", userManagementRoute);
 app.use("/api/ckeditor", ckeditorRoute);
 
-// ====================
-// ✅ 6️⃣ Health Checks
-// ====================
+
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "OK",
@@ -144,14 +132,10 @@ app.get("/health/details", async (req, res) => {
   }
 });
 
-// ====================
-// ✅ 7️⃣ Error Handler
-// ====================
+
 app.use(globalErrorHandler);
 
-// ====================
-// ✅ 8️⃣ Start Server
-// ====================
+
 connectDB().then(() => {
   app.listen(port, () => {
     console.log(`Server is running at port ${port}`);

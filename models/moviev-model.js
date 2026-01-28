@@ -5,16 +5,15 @@ const movievSchema = new Schema({
   title: { type: String, required: true }, // movie title
   release_year: { type: String },
   release_date: { type: String },
- role: { type: String }, // actor’s character name
+  role: { type: String }, // actor’s character name
   // 🧑‍🎭 Role Details
   genre: { type: String }, // actor’s character name
   role_type: {
     type: String,
-    
   },
-  sort: { type: String }, // actor’s character name
-  statusnew: { type: String }, // actor’s character name
-  awards: { type: String }, // actor’s character name
+  sort: { type: String },
+  statusnew: { type: String },
+  awards: { type: String },
 
   // 🌐 Relations
   celebrityId: { type: String }, // movie title
@@ -43,13 +42,13 @@ const movievSchema = new Schema({
   // 🔗 SEO / Status
   url: { type: String },
   status: { type: String, default: "1" },
-watchLinks: [
-  {
-    platform: { type: String, trim: true },
-    url: { type: String, trim: true },
-    type: { type: String, trim: true },
-  },
-],
+  watchLinks: [
+    {
+      platform: { type: String, trim: true },
+      url: { type: String, trim: true },
+      type: { type: String, trim: true },
+    },
+  ],
 });
 
 const Moviev = model("moviev", movievSchema);

@@ -49,11 +49,10 @@ router.patch(
   ]),
   CustomOptionController.updatecustomoption
 );
+
 router.get("/getdata/:celebrityId", CustomOptionController.getdata);
 router.get("/getcustomoptionByid/:id", CustomOptionController.getcustomoptionByid);
 router.delete("/deletecustomoption/:id", CustomOptionController.deletecustomoption);
 router.patch("/updateStatus", CustomOptionController.updateStatus);
-
-
 
 module.exports = router;

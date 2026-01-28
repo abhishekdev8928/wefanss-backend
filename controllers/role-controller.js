@@ -5,7 +5,9 @@ const Privilege = require("../models/previlege-model");
 const createRole = async (req, res) => {
   try {
     const { name, description } = req.body;
-    const createdBy = req.userId;
+    const createdBy = req?.user?.userId;
+
+
 
     const roleExists = await RoleModel.findOne({ name });
     if (roleExists) {
@@ -22,6 +24,8 @@ const createRole = async (req, res) => {
       status: 1,
       is_system: false 
     });
+
+    console.log()
 
     await Privilege.create({
       role: name,
@@ -78,7 +82,7 @@ const getRoleById = async (req, res) => {
     
     const role = await RoleModel.findOne({
       _id: id,
-      is_system: { $ne: true } // Only allow fetching non-system roles
+      is_system: { $ne: true }
     })
       .populate('createdBy', 'name email')
       .populate('updatedBy', 'name email');
