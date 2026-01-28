@@ -62,9 +62,13 @@ const formatDateDMY = (date) => {
       statusnew,
     } = req.body;
 
-    // if(!mongoose.Types.ObjectId.isValid(celebrityId)){
-    //   throw new Error("Invalid mongoose id")
-    // }
+   if (!mongoose.Types.ObjectId.isValid(celebrityId)) {
+  return res.status(400).json({
+    success: false,
+    message: "Invalid celebrityId. Please provide a valid MongoDB ObjectId."
+  });
+}
+
 
     // ✅ Single image or video upload
     const mediaFile = req.files?.image?.[0]

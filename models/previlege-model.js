@@ -9,20 +9,38 @@ const permissionSchema = new Schema({
     trim: true
   },
   operations: {
-    type: [String],
-    enum: Object.values(OPERATIONS),
+    type: Map,
+    of: Boolean,
     required: true,
-    set: ops => [...new Set(ops)] 
+    validate: {
+      validator: function(operationsMap) {
+        // Ensure all keys are valid operations
+        const validOps = Object.values(OPERATIONS);
+        for (let key of operationsMap.keys()) {
+          if (!validOps.includes(key)) {
+            return false;
+          }
+        }
+        return true;
+      },
+      message: 'Invalid operation key detected'
+    }
   }
 }, { _id: false });
 
 // ✅ Custom validation: publish only allowed for celebrity
-permissionSchema.path('operations').validate(function(operations) {
-  if (operations.includes(OPERATIONS.PUBLISH) && this.resource !== RESOURCES.CELEBRITY) {
-    return false;
+permissionSchema.pre('validate', function(next) {
+  const operationsMap = this.operations;
+  
+  // Check if PUBLISH exists in operations
+  if (operationsMap && operationsMap.has(OPERATIONS.PUBLISH)) {
+    if (this.resource !== RESOURCES.CELEBRITY) {
+      return next(new Error('PUBLISH operation is only allowed for CELEBRITY resource'));
+    }
   }
-  return true;
-}, 'PUBLISH operation is only allowed for CELEBRITY resource');
+  
+  next();
+});
 
 const privilegeSchema = new Schema({
   role: {

@@ -54,8 +54,8 @@ const authenticate = async (req, res, next) => {
     }
 
     // ✅ Fetch role from database - ALWAYS verify from DB
-    const roleDoc = await Role.findById(user.roleId)
-      .select("name is_system")  // ✅ Field name is "name" not "role"
+    const roleDoc = await Role.findById(user.role)  // ✅ Changed from user.roleId to user.role
+      .select("name is_system")
       .lean();
 
     if (!roleDoc) {
@@ -70,10 +70,12 @@ const authenticate = async (req, res, next) => {
       userId: user._id,
       name: user.name,
       email: user.email,
-      roleId: user.roleId,
-      role: roleDoc.name,          
+      roleId: user.role,          
+      roleName: roleDoc.name, 
       isSystemRole: roleDoc.is_system || false  
     };
+
+    console.log(req.user)
 
     next();
 

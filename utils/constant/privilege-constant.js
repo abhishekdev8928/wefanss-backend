@@ -1,22 +1,21 @@
 const OPERATIONS = {
-  CREATE: 'create',
-  READ: 'read',
-  UPDATE: 'update',
+  ADD: 'add',
+  EDIT: 'edit',
   DELETE: 'delete',
   PUBLISH: 'publish'
 };
 
-const RESOURCES = {
+const RESOURCES = Object.freeze({
   PROFESSION: 'profession',
   LANGUAGE: 'language',
-  TRIVIA_TYPES: 'trivia_types',
-  SOCIAL_LINKS: 'social_links',
+  TRIVIA_TYPE: 'triviaType',
+  SOCIAL_LINK: 'socialLink',
   GENRE: 'genre',
   CELEBRITY: 'celebrity',
-  SECTION_TYPES: 'section_types',
-  SECTION_TEMPLATE: 'section_template',
-  USERS: 'users'
-};
+  SECTION_TYPE: 'sectionType',
+  SECTION_TEMPLATE: 'sectionTemplate'
+});
+
 
 module.exports = {
   OPERATIONS,

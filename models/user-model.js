@@ -121,13 +121,14 @@ userSchema.methods.comparePassword = async function (password) {
 };
 
 // Generate Access Token
+// Generate Access Token
 userSchema.methods.generateToken = function () {
   return jwt.sign(
     {
       sub: this._id.toString(),      
       email: this.email,
       name: this.name,
-      roleId: this.roleId?.toString(), 
+      role: this.role?.toString(),  
     },
     process.env.JWT_SECRET_KEY,
     { expiresIn: "12h" }

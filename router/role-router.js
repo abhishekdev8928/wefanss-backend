@@ -29,6 +29,7 @@ router.post(
   "/",
   authMiddleware,
   validate(createRoleSchema),
+   requireRole([STATIC_ROLES.SUPER_ADMIN]),
   createRole
 );
 
@@ -41,7 +42,7 @@ router.post(
 router.get(
   "/",
   authMiddleware,
-  requireRole([STATIC_ROLES.SUPER_ADMIN]),
+  requireRole([STATIC_ROLES.SUPER_ADMIN , STATIC_ROLES.ADMIN]),
   getAllRoles
 );
 

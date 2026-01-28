@@ -28,7 +28,7 @@ const electionRoute = require("./router/election-router");
 const positionsRoute = require("./router/positions-router");
 const userManagementRoute = require("./router/usermanagement-router");
 
-const celebratyRoute = require("./router/celebraty-router");
+const celebrityRoute = require("./router/celebrity-router");
 const timelineRoute = require("./router/timeline-router");
 const sectionmasterRoute = require("./router/sectionmaster-router");
 
@@ -42,7 +42,7 @@ const dashboardRoute = require("./router/dashboard-router");
 
 const privilegesRoutes = require("./router/privilege-router");
 
-const { default: globalErrorHandler } = require("./middlewares/error.middleware");
+const globalErrorHandler  = require("./middlewares/error.middleware");
 const trackActivity = require("./middlewares/trackActivity");
 const ckeditorRoute = require("./router/ckeditor-router");
 
@@ -87,7 +87,7 @@ app.use("/api/professionalmaster", professionalmasterRoute);
 app.use("/api/template", templateRoute);
 app.use("/api/language", safeTrackActivity, languageRoute);
 app.use("/api/triviaTypes", triviaTypesRoute);
-app.use("/api/celebraty", celebratyRoute);
+app.use("/api/celebraty", celebrityRoute);
 app.use("/api/timeline", timelineRoute);
 app.use("/api/triviaentries", triviaentriesRoute);
 app.use("/api/moviev", movievRoute);

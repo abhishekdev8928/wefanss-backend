@@ -12,7 +12,7 @@ const { setPrivilegesSchema } = require("../shared/schema/privilege-schema");
 const authMiddleware = require("../middlewares/auth-middleware");
 
 // Get all privileges
-router.get('/role/:userId', authMiddleware, getUserPrivileges);
+router.get('/', authMiddleware, getUserPrivileges);
 
 // Get privileges by role ID
 router.get(

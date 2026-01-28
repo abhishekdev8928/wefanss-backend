@@ -9,25 +9,28 @@ const { STATIC_ROLES } = require("../utils/constant/role-constant");
 const requireRole = (allowedRoles = []) => {
   return async (req, res, next) => {
     try {
-    
-      const { role } = req.user;
+      // ✅ Changed: Use roleName instead of role
+      const { roleName } = req.user;
 
-      console.log(req.user)
+      console.log(req.user);
 
-      if (!role) {
+      if (!roleName) {
         return res.status(403).json({
           success: false,
           message: "Role not found"
         });
       }
 
-      console.log(allowedRoles ,role )
-      if (!allowedRoles.includes(role)) {
+      console.log(allowedRoles, roleName);
+      
+     
+      if (!allowedRoles.includes(roleName)) {
         return res.status(403).json({
           success: false,
           message: `Access denied. Required roles: ${allowedRoles.join(", ")}`
         });
       }
+      
       next();
     } catch (error) {
       return res.status(500).json({

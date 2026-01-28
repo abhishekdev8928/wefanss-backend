@@ -85,10 +85,10 @@ const addElectionSchema = z.object({
   statusnew: z.string().optional(),
 });
 
-// In router file
+
 router.post(
   "/addElection",
-  // validate(addElectionSchema),
+  validate(addElectionSchema),
   upload.fields([
     { name: "image", maxCount: 1 },
   ]),

@@ -1,44 +1,108 @@
 const express = require("express");
 const router = express.Router();
 const SocialLink = require("../controllers/sociallink-controller");
-const {blogSchema } = require("../validators/auth-validator");
-const validate = require("../middlewares/validate-middleware");
-
+const authenticate = require("../middlewares/auth-middleware");
+const { checkPrivilege } = require("../middlewares/privilege-middleware");
+const { RESOURCES, OPERATIONS } = require("../utils/constant/privilege-constant");
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
-const bodyparser = require("body-parser");
 
-router.use(bodyparser.urlencoded({extended:true}));
-router.use(express.static(path.resolve(__dirname,'public')))
-//crole
-router.route("/addSocialLink").post(SocialLink.addSocialLink);
-router.route("/getdataSocialLink").get(SocialLink.getdataSocialLink);
-router.route("/getSocialLinkByid/:id").get(SocialLink.getSocialLinkByid);
-router.route("/updateSocialLink/:id").patch(SocialLink.updateCategory);
-router.route("/deleteSocialLink/:id").delete(SocialLink.deleteSocialLink);
-router.route("/update-statuscategory").patch(SocialLink.updateStatusCategory);
-router.use(bodyparser.urlencoded({extended:true}));
-router.use(express.static(path.resolve(__dirname,'public')))
+// ✅ Apply authentication to all routes
+router.use(authenticate);
 
-    const storage = multer.diskStorage({
-        destination: function(req,file, cb){
-        if(!fs.existsSync("public")){
-            fs.mkdirSync("public");
-        }
-        if(!fs.existsSync("public/allimages")){
-            fs.mkdirSync("public/allimages");
-        }
+// ✅ File upload configuration (if needed in future)
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = "public/sociallinks";
     
-        cb(null, "public/allimages");
-        },
-        filename: function(req,file,cb){
-        cb(null, Date.now() + file.originalname);
-        },
-    });
-  
-    const upload = multer({
-        storage:storage,
-    })
+    if (!fs.existsSync("public")) {
+      fs.mkdirSync("public");
+    }
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir);
+    }
 
-    module.exports = router;
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + "-" + file.originalname);
+  },
+});
+
+const upload = multer({ storage: storage });
+
+/**
+ * @route   POST /api/sociallink/addSocialLink
+ * @desc    Create a new social link
+ * @access  Private - Requires ADD permission on SOCIAL_LINKS resource
+ * @body    { name, url, icon?, createdBy }
+ */
+router.post(
+  "/addSocialLink",
+  checkPrivilege(RESOURCES.SOCIAL_LINKS, OPERATIONS.ADD),
+  SocialLink.addSocialLink
+);
+
+/**
+ * @route   GET /api/sociallink/getdataSocialLink
+ * @desc    Get all social links
+ * @access  Private - Anyone with access to social links resource
+ * @query   { page?, limit?, search? }
+ */
+router.get(
+  "/getdataSocialLink",
+  checkPrivilege(RESOURCES.SOCIAL_LINKS, OPERATIONS.ADD), // ✅ ADD permission includes read access
+  SocialLink.getdataSocialLink
+);
+
+/**
+ * @route   GET /api/sociallink/getSocialLinkByid/:id
+ * @desc    Get a single social link by ID
+ * @access  Private - Anyone with access to social links resource
+ * @params  id - Social Link ID
+ */
+router.get(
+  "/getSocialLinkByid/:id",
+  checkPrivilege(RESOURCES.SOCIAL_LINKS, OPERATIONS.ADD), // ✅ ADD permission includes read access
+  SocialLink.getSocialLinkByid
+);
+
+/**
+ * @route   PATCH /api/sociallink/updateSocialLink/:id
+ * @desc    Update an existing social link
+ * @access  Private - Requires EDIT permission on SOCIAL_LINKS resource
+ * @params  id - Social Link ID
+ * @body    { name?, url?, icon? }
+ */
+router.patch(
+  "/updateSocialLink/:id",
+  checkPrivilege(RESOURCES.SOCIAL_LINKS, OPERATIONS.EDIT),
+  SocialLink.updateCategory
+);
+
+/**
+ * @route   DELETE /api/sociallink/deleteSocialLink/:id
+ * @desc    Delete a social link
+ * @access  Private - Requires DELETE permission on SOCIAL_LINKS resource
+ * @params  id - Social Link ID
+ */
+router.delete(
+  "/deleteSocialLink/:id",
+  checkPrivilege(RESOURCES.SOCIAL_LINKS, OPERATIONS.DELETE),
+  SocialLink.deleteSocialLink
+);
+
+/**
+ * @route   PATCH /api/sociallink/update-statuscategory
+ * @desc    Update social link status (active/inactive)
+ * @access  Private - Requires EDIT permission on SOCIAL_LINKS resource
+ * @body    { id, status }
+ */
+router.patch(
+  "/update-statuscategory",
+  checkPrivilege(RESOURCES.SOCIAL_LINKS, OPERATIONS.EDIT),
+  SocialLink.updateStatusCategory
+);
+
+module.exports = router;
