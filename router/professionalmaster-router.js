@@ -1,14 +1,13 @@
 const express = require("express");
 const router = express.Router();
 
-const ProfessionalController = require("../controllers/professionalmaster-controller");
+const ProfessionalController = require("../controllers/profession-controller");
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 const authenticate = require("../middlewares/auth-middleware");
 const { requireRole } = require("../middlewares/require-role-middleware");
 const { STATIC_ROLES } = require("../config/role-config"); 
-
 
 router.use(authenticate);
 
@@ -31,93 +30,82 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 /**
- * @route   POST /api/professional/addprofessional
+ * @route   POST /api/professional
  * @desc    Create a new professional with image upload
  * @access  Private - Super Admin, Admin only
- * @body    { name, description?, isActive?, image (file) }
  */
 router.post(
-  "/addprofessional",
+  "/",
   requireRole([STATIC_ROLES.SUPER_ADMIN, STATIC_ROLES.ADMIN]),
-  upload.fields([
-    { name: "image", maxCount: 1 },
-  ]),
-  ProfessionalController.addprofessional
+  upload.fields([{ name: "image", maxCount: 1 }]),
+  ProfessionalController.createProfessional
 );
 
 /**
- * @route   PATCH /api/professional/updateprofessional/:id
+ * @route   PUT /api/professional/:id
  * @desc    Update an existing professional
  * @access  Private - Super Admin, Admin only
- * @params  id - Professional ID
- * @body    { name?, description?, isActive?, image? (file) }
  */
-router.patch(
-  "/updateprofessional/:id",
+router.put(
+  "/:id",
   requireRole([STATIC_ROLES.SUPER_ADMIN, STATIC_ROLES.ADMIN]),
-  upload.fields([
-    { name: "image", maxCount: 1 },
-  ]),
-  ProfessionalController.updateprofessional
+  upload.fields([{ name: "image", maxCount: 1 }]),
+  ProfessionalController.updateProfessional
 );
 
 /**
- * @route   GET /api/professional/getdata
- * @desc    Get all professionals with pagination and filters
- * @access  Private - Super Admin only
- * @query   { page?, limit?, search?, isActive? }
- */
-router.get(
-  "/getdata",
-  requireRole([STATIC_ROLES.SUPER_ADMIN]),
-  ProfessionalController.getdata
-);
-
-/**
- * @route   GET /api/professional/getprofessionalByid/:id
- * @desc    Get a single professional by ID
- * @access  Private - Super Admin, Admin only
- * @params  id - Professional ID
- */
-router.get(
-  "/getprofessionalByid/:id",
-  requireRole([STATIC_ROLES.SUPER_ADMIN, STATIC_ROLES.ADMIN]),
-  ProfessionalController.getprofessionalByid
-);
-
-/**
- * @route   DELETE /api/professional/deleteprofessional/:id
- * @desc    Delete a professional
- * @access  Private - Super Admin, Admin only
- * @params  id - Professional ID
- */
-router.delete(
-  "/deleteprofessional/:id",
-  requireRole([STATIC_ROLES.SUPER_ADMIN, STATIC_ROLES.ADMIN]),
-  ProfessionalController.deleteprofessional
-);
-
-/**
- * @route   PATCH /api/professional/update-statusprofessional
+ * @route   PATCH /api/professional/status
  * @desc    Update professional status (active/inactive)
  * @access  Private - Super Admin, Admin only
- * @body    { id, isActive }
  */
 router.patch(
-  "/update-statusprofessional",
+  "/status",
   requireRole([STATIC_ROLES.SUPER_ADMIN, STATIC_ROLES.ADMIN]),
-  ProfessionalController.updateStatus
+  ProfessionalController.updateProfessionalStatus
 );
 
 /**
- * @route   GET /api/professional/SectionTemplateOptions
+ * @route   GET /api/professional
+ * @desc    Get all professionals
+ * @access  Private - Super Admin only
+ */
+router.get(
+  "/",
+  requireRole([STATIC_ROLES.SUPER_ADMIN]),
+  ProfessionalController.getAllProfessionals
+);
+
+/**
+ * @route   GET /api/professional/section-templates
  * @desc    Get section template options for dropdown
  * @access  Private - Super Admin, Admin only
  */
 router.get(
-  "/SectionTemplateOptions",
+  "/section-templates",
   requireRole([STATIC_ROLES.SUPER_ADMIN, STATIC_ROLES.ADMIN]),
-  ProfessionalController.SectionTemplateOptions
+  ProfessionalController.getSectionTemplateOptions
+);
+
+/**
+ * @route   GET /api/professional/:id
+ * @desc    Get a single professional by ID
+ * @access  Private - Super Admin, Admin only
+ */
+router.get(
+  "/:id",
+  requireRole([STATIC_ROLES.SUPER_ADMIN, STATIC_ROLES.ADMIN]),
+  ProfessionalController.getProfessionalById
+);
+
+/**
+ * @route   DELETE /api/professional/:id
+ * @desc    Delete a professional
+ * @access  Private - Super Admin, Admin only
+ */
+router.delete(
+  "/:id",
+  requireRole([STATIC_ROLES.SUPER_ADMIN, STATIC_ROLES.ADMIN]),
+  ProfessionalController.deleteProfessional
 );
 
 module.exports = router;

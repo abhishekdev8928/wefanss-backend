@@ -43,7 +43,7 @@ router.get(
  */
 router.get(
   "/sociallist",
-  checkPrivilege(RESOURCES.SOCIAL_LINKS, OPERATIONS.ADD), // ✅ Changed from READ to ADD
+  checkPrivilege(RESOURCES.SOCIAL_LINK, OPERATIONS.ADD), // ✅ Changed from READ to ADD
   Celebraty.sociallist
 );
 
@@ -151,7 +151,7 @@ router.get(
  */
 router.get(
   "/getSectionMasters",
-  checkPrivilege(RESOURCES.SECTION_TYPES, OPERATIONS.ADD), // ✅ Changed from READ to ADD
+  checkPrivilege(RESOURCES.SECTION_TYPE, OPERATIONS.ADD), // ✅ Changed from READ to ADD
   Celebraty.getSectionMasters
 );
 

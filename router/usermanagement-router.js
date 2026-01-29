@@ -78,7 +78,6 @@ router.patch(
  */
 router.delete(
   "/:id",
-  validate(deleteUserSchema),
   deleteUser
 );
 

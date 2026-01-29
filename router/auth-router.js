@@ -28,7 +28,6 @@ router.post(
   "/register",
   validate(registerSchema),
   authenticate,
-  checkPrivilege(RESOURCES.USERS, OPERATIONS.CREATE),
   authControllers.registerUser
 );
 

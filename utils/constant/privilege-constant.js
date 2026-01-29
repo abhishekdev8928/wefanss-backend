@@ -13,11 +13,27 @@ const RESOURCES = Object.freeze({
   GENRE: 'genre',
   CELEBRITY: 'celebrity',
   SECTION_TYPE: 'sectionType',
-  SECTION_TEMPLATE: 'sectionTemplate'
-});
+  SECTION_TEMPLATE: 'sectionTemplate',
+  ROLE_MANAGEMENT: 'roleManagement', 
+  USER_MANAGEMENT: 'userManagement', 
 
+})
+
+
+const PRIVILEGE_RESOURCES = Object.freeze({
+
+  LANGUAGE: 'language',
+  TRIVIA_TYPE: 'triviaType',
+  SOCIAL_LINK: 'socialLink',
+  GENRE: 'genre',
+  CELEBRITY: 'celebrity',
+  SECTION_TYPE: 'sectionType',
+  SECTION_TEMPLATE: 'sectionTemplate',
+
+})
 
 module.exports = {
   OPERATIONS,
-  RESOURCES
+  RESOURCES,
+  PRIVILEGE_RESOURCES
 };

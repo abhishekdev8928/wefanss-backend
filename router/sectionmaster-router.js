@@ -37,7 +37,7 @@ const upload = multer({ storage });
  */
 router.post(
   "/addsectionmaster",
-  checkPrivilege(RESOURCES.SECTION_TYPES, OPERATIONS.ADD),
+  checkPrivilege(RESOURCES.SECTION_TYPE, OPERATIONS.ADD),
   upload.fields([
     { name: "media", maxCount: 1 },
   ]),
@@ -53,7 +53,7 @@ router.post(
  */
 router.patch(
   "/updatesectionmaster/:id",
-  checkPrivilege(RESOURCES.SECTION_TYPES, OPERATIONS.EDIT),
+  checkPrivilege(RESOURCES.SECTION_TYPE, OPERATIONS.EDIT),
   upload.fields([
     { name: "media", maxCount: 1 },
   ]),
@@ -68,7 +68,7 @@ router.patch(
  */
 router.get(
   "/getdata",
-  checkPrivilege(RESOURCES.SECTION_TYPES, OPERATIONS.ADD), // ✅ ADD permission includes read access
+  checkPrivilege(RESOURCES.SECTION_TYPE, OPERATIONS.ADD), // ✅ ADD permission includes read access
   SectionMasterController.getdata
 );
 
@@ -80,7 +80,7 @@ router.get(
  */
 router.get(
   "/getsectionmasterByid/:id",
-  checkPrivilege(RESOURCES.SECTION_TYPES, OPERATIONS.ADD), // ✅ ADD permission includes read access
+  checkPrivilege(RESOURCES.SECTION_TYPE, OPERATIONS.ADD), // ✅ ADD permission includes read access
   SectionMasterController.getsectionmasterByid
 );
 
@@ -92,7 +92,7 @@ router.get(
  */
 router.delete(
   "/deletesectionmaster/:id",
-  checkPrivilege(RESOURCES.SECTION_TYPES, OPERATIONS.DELETE),
+  checkPrivilege(RESOURCES.SECTION_TYPE, OPERATIONS.DELETE),
   SectionMasterController.deletesectionmaster
 );
 
@@ -104,7 +104,7 @@ router.delete(
  */
 router.patch(
   "/updateStatus",
-  checkPrivilege(RESOURCES.SECTION_TYPES, OPERATIONS.EDIT),
+  checkPrivilege(RESOURCES.SECTION_TYPE, OPERATIONS.EDIT),
   SectionMasterController.updateStatus
 );
 

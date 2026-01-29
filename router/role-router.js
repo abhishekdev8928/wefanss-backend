@@ -29,7 +29,7 @@ router.post(
   "/",
   authMiddleware,
   validate(createRoleSchema),
-   requireRole([STATIC_ROLES.SUPER_ADMIN]),
+   requireRole([STATIC_ROLES.SUPER_ADMIN , STATIC_ROLES.ADMIN]),
   createRole
 );
 

@@ -48,11 +48,19 @@ const checkPrivilege = (resource, operation) => {
         });
       }
 
-      // ✅ Check if operation is allowed (operations is now a Map object)
-      // When using .lean(), Map becomes a plain object
+      // ✅ Check if operation is allowed
       const operations = permission.operations;
       
-      if (!operations || operations[operation] !== true) {
+      // 🔥 IMPROVED: More defensive checks
+      if (!operations || typeof operations !== 'object') {
+        return res.status(403).json({
+          success: false,
+          message: `Invalid permission configuration for ${resource}`
+        });
+      }
+
+      // 🔥 IMPROVED: Explicit true check
+      if (operations[operation] !== true) {
         // Get list of enabled operations for better error message
         const enabledOps = Object.entries(operations)
           .filter(([_, enabled]) => enabled === true)

@@ -48,7 +48,7 @@ const ckeditorRoute = require("./router/ckeditor-router");
 
 
 const corsOptions = {
-  origin: process.env.FRONTEND_URL, 
+  origin: "https://wefanss-frontend.vercel.app", 
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   credentials: true,
 };

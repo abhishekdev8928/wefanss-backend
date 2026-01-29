@@ -1,32 +1,20 @@
+const createHttpError = require("http-errors");
 const Professionalmaster = require("../models/professionalmaster-model");
 const { SectionTemplate } = require("../models/sectiontemplate-model");
-
+const Celebratysection = require("../models/celebratysection-model");
+const { Celebraty } = require("../models/celebraty-model");
 const fs = require("fs");
 const path = require("path");
-// Utility: Create clean URL from title
-function createCleanUrl(title) {
-  let cleanTitle = title
+
+// ==================== UTILITY FUNCTIONS ====================
+
+const createCleanUrl = (title) => {
+  return title
     .toLowerCase()
     .replace(/[^\w\s-]/g, "")
     .replace(/\s+/g, "-");
-  return cleanTitle;
-}
-const SectionTemplateOptions = async (req, res) => {
-  try {
-    const item = await SectionTemplate.find({ status: 1 });
-    if (!item) {
-      res.status(404).json({ msg: "No Data Found" });
-      return;
-    }
-
-    res.status(200).json({
-      msg: item,
-    });
-  } catch (error) {
-    console.log(`Language ${error}`);
-  }
 };
-// Utility: Format date as dd-mm-yyyy hh:mm:ss
+
 const formatDateDMY = (date) => {
   const d = new Date(date);
   const day = String(d.getDate()).padStart(2, "0");
@@ -39,43 +27,128 @@ const formatDateDMY = (date) => {
   return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
 };
 
-// Create new Professionalmaster
-const addprofessional = async (req, res) => {
-  try {
-    console.log("Incoming Body:", req.body);
+// ==================== SYNC CELEBRITY SECTIONS ====================
 
-    // ✅ Parse sectiontemplate if it comes as JSON string
+const syncCelebritySections = async (professionId, templateIds, specificCelebrityId = null) => {
+  try {
+    console.log("🔄 Starting sync for profession:", professionId);
+
+    let celebrities;
+    if (specificCelebrityId) {
+      const celeb = await Celebraty.findById(specificCelebrityId).select("_id");
+      celebrities = celeb ? [celeb] : [];
+    } else {
+      celebrities = await Celebraty.find({
+        professions: professionId.toString(),
+      }).select("_id");
+    }
+
+    if (!celebrities.length) {
+      console.log("⚠️ No celebrities found for this profession");
+      return;
+    }
+
+    for (const templateId of templateIds) {
+      const template = await SectionTemplate.findById(templateId).populate("sections");
+
+      if (!template || !template.sections || template.sections.length === 0) {
+        console.log(`⚠️ Template ${templateId} not found or has no sections`);
+        continue;
+      }
+
+      for (const celeb of celebrities) {
+        for (const section of template.sections) {
+          const exists = await Celebratysection.findOne({
+            celebratyId: celeb._id.toString(),
+            professions: professionId.toString(),
+            templateId: templateId.toString(),
+            sectionmaster: section._id.toString(),
+          });
+
+          if (!exists) {
+            await Celebratysection.create({
+              celebratyId: celeb._id.toString(),
+              professions: professionId.toString(),
+              templateId: templateId.toString(),
+              sectionmaster: section._id.toString(),
+              sectiontemplate: section.name || template.title,
+            });
+            console.log(`✅ Section created: ${section.name} for celeb: ${celeb._id}`);
+          }
+        }
+      }
+    }
+
+    console.log("🎉 Sync completed successfully!");
+  } catch (error) {
+    console.error("❌ Sync error:", error);
+    throw error;
+  }
+};
+
+// ==================== CONTROLLER FUNCTIONS ====================
+
+// GET: Fetch section template options
+const getSectionTemplateOptions = async (req, res, next) => {
+  try {
+    const templates = await SectionTemplate.find({ status: 1 });
+
+    if (!templates || templates.length === 0) {
+      throw createHttpError(404, "No section templates found");
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Section templates fetched successfully",
+      data: templates,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST: Create new professional master
+const createProfessional = async (req, res, next) => {
+  try {
+    const { name, slug, createdBy } = req.body;
     let sectiontemplate = [];
+
+    // Validation
+    if (!name || !name.trim()) {
+      throw createHttpError(400, "Professional name is required");
+    }
+
+    if (!slug || !slug.trim()) {
+      throw createHttpError(400, "Slug is required");
+    }
+
+    // Parse section template
     if (req.body.sectiontemplate) {
       try {
         sectiontemplate = JSON.parse(req.body.sectiontemplate);
       } catch (err) {
-        console.warn("Failed to parse sectiontemplate JSON:", err.message);
+        throw createHttpError(400, "Invalid section template format");
       }
     }
 
-    const { name, slug, createdBy } = req.body;
-    const url = createCleanUrl(name);
-    const mainImage = req.files?.image?.[0]?.filename || "";
-    const now = new Date();
-    const createdAt = formatDateDMY(now);
-
-    // ✅ Check if professionalmaster already exists (by name or slug)
+    // Check if already exists
     const existingProfessional = await Professionalmaster.findOne({
-      $or: [{ name: name }, { slug: slug }],
+      $or: [{ name: name.trim() }, { slug: slug.trim() }],
     });
 
     if (existingProfessional) {
-      return res.status(400).json({
-        success: false,
-        msg: "professionalmaster already exist",
-      });
+      throw createHttpError(400, "Professional master already exists with this name or slug");
     }
 
-    // ✅ Create new Professionalmaster
-    const newProfessional = new Professionalmaster({
-      name,
-      slug,
+    // Handle image upload
+    const mainImage = req.files?.image?.[0]?.filename || "";
+    const url = createCleanUrl(name);
+    const createdAt = formatDateDMY(new Date());
+
+    // Create new professional master
+    const newProfessional = await Professionalmaster.create({
+      name: name.trim(),
+      slug: slug.trim(),
       image: mainImage,
       sectiontemplate,
       status: 1,
@@ -84,333 +157,253 @@ const addprofessional = async (req, res) => {
       createdBy,
     });
 
-    await newProfessional.save();
-
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      msg: "Professionalmaster added successfully",
-      data: newProfessional,
+      message: "Professional master created successfully",
+      data: {
+        professional: newProfessional,
+        professionalId: newProfessional._id.toString(),
+      },
     });
   } catch (error) {
-    console.error("Add Professionalmaster Error:", error);
-    res.status(500).json({
-      success: false,
-      msg: "Server error",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-
-
-
-// utils/syncCelebritySections.js
-
-const Celebratysection = require("../models/celebratysection-model");
-const { Celebraty } = require("../models/celebraty-model");
-
-
-
-
-
-
-/**
- * Sync celebrity sections for a profession
- * @param {String} professionId - Profession ID
- * @param {Array} templateIds - Array of template IDs
- * @param {String|null} specificCelebrityId - Optional: sync only for this celebrity
- */
-async function syncCelebritySections(professionId, templateIds, specificCelebrityId = null) {
+// PUT: Update professional master
+const updateProfessional = async (req, res, next) => {
   try {
-    console.log("🔄 Starting sync for profession:", professionId);
-    console.log("📋 Templates to sync:", templateIds);
-
-    // ✅ If specific celebrity ID provided, sync only that one
-    let celebrities;
-    if (specificCelebrityId) {
-      const celeb = await Celebraty.findById(specificCelebrityId).select("_id");
-      celebrities = celeb ? [celeb] : [];
-      console.log("🎯 Syncing for specific celebrity:", specificCelebrityId);
-    } else {
-      // ✅ Otherwise, sync all celebrities with this profession
-      celebrities = await Celebraty.find({
-        professions: professionId.toString(),
-      }).select("_id");
-      console.log("👥 Syncing for all celebrities:", celebrities.length);
-    }
-
-    if (!celebrities.length) {
-      console.log("⚠️ No celebrities found for this profession");
-      return;
-    }
-
-    // ✅ Loop through each template
-    for (const templateId of templateIds) {
-      const template = await SectionTemplate
-        .findById(templateId)
-        .populate("sections");
-
-      if (!template) {
-        console.log(`⚠️ Template ${templateId} not found`);
-        continue;
-      }
-
-      if (!template.sections || template.sections.length === 0) {
-        console.log(`⚠️ Template ${templateId} has no sections`);
-        continue;
-      }
-
-      console.log(`✅ Processing template: ${template.title} with ${template.sections.length} sections`);
-
-      // ✅ Loop through each celebrity
-      for (const celeb of celebrities) {
-        // ✅ Loop through each section in template
-        for (const section of template.sections) {
-          // ✅ Check if section already exists
-          const exists = await Celebratysection.findOne({
-            celebratyId: celeb._id.toString(),
-            professions: professionId.toString(),
-            templateId: templateId.toString(),
-            sectionmaster: section._id.toString(),
-          });
-
-          if (exists) {
-            console.log(`⏭️  Section already exists for celeb ${celeb._id}`);
-            continue;
-          }
-
-          // ✅ Create new section
-          await Celebratysection.create({
-            celebratyId: celeb._id.toString(),
-            professions: professionId.toString(),
-            templateId: templateId.toString(),
-            sectionmaster: section._id.toString(),
-            sectiontemplate: section.name || template.title,
-          });
-
-          console.log(`✅ Section created: ${section.name} for celeb: ${celeb._id}`);
-        }
-      }
-    }
-
-    console.log("🎉 Sync completed successfully!");
-  } catch (err) {
-    console.error("❌ Sync error:", err);
-    throw err;
-  }
-}
-
-
-
-
-
-const updateprofessional = async (req, res) => {
-  try {
-    const professionalmasterId = req.params.id;
+    const { id } = req.params;
     const { name, slug } = req.body;
-
-    // ✅ Parse section templates
     let sectiontemplate = [];
+
+    // Validation
+    if (!id) {
+      throw createHttpError(400, "Professional ID is required");
+    }
+
+    // Parse section template
     if (req.body.sectiontemplate) {
       try {
         sectiontemplate = JSON.parse(req.body.sectiontemplate);
       } catch (err) {
-        console.warn("❌ Failed to parse sectiontemplate JSON:", err.message);
-        return res.status(400).json({
-          success: false,
-          msg: "Invalid sectiontemplate format",
-        });
+        throw createHttpError(400, "Invalid section template format");
       }
     }
 
-    // ✅ Find profession
-    const professionalmaster = await Professionalmaster.findById(
-      professionalmasterId
-    );
-    
-    if (!professionalmaster) {
-      return res.status(404).json({ 
-        success: false, 
-        msg: "Profession master not found" 
-      });
+    // Find professional
+    const professional = await Professionalmaster.findById(id);
+    if (!professional) {
+      throw createHttpError(404, "Professional master not found");
     }
 
-    // ✅ Check for duplicates (name or slug)
+    // Check for duplicates
     if (name || slug) {
       const duplicate = await Professionalmaster.findOne({
         $and: [
-          { _id: { $ne: professionalmasterId } },
+          { _id: { $ne: id } },
           {
             $or: [
-              { name: name || professionalmaster.name },
-              { slug: slug || professionalmaster.slug },
+              { name: name?.trim() || professional.name },
+              { slug: slug?.trim() || professional.slug },
             ],
           },
         ],
       });
 
       if (duplicate) {
-        return res.status(400).json({
-          success: false,
-          msg: "Profession with this name or slug already exists",
-        });
+        throw createHttpError(400, "Professional with this name or slug already exists");
       }
     }
 
-    // ✅ Store old templates to detect changes
-    const oldTemplates = professionalmaster.sectiontemplate.map(t => t.toString());
+    // Store old templates
+    const oldTemplates = professional.sectiontemplate.map((t) => t.toString());
 
-    // ✅ Update fields
-    if (name) professionalmaster.name = name;
-    if (slug) professionalmaster.slug = slug;
-    
-    // ✅ Update section templates if provided
+    // Update fields
+    if (name) professional.name = name.trim();
+    if (slug) professional.slug = slug.trim();
     if (Array.isArray(sectiontemplate) && sectiontemplate.length > 0) {
-      professionalmaster.sectiontemplate = sectiontemplate;
+      professional.sectiontemplate = sectiontemplate;
     }
 
-    // ✅ Handle image update
-    const newImageFile =
-      (req.files && req.files.image && req.files.image[0]) || req.file;
-
+    // Handle image update
+    const newImageFile = req.files?.image?.[0] || req.file;
     if (newImageFile) {
-      // Delete old image if exists
-      if (professionalmaster.image) {
-        const oldPath = path.join(
-          __dirname,
-          "../public/professionalmaster/",
-          professionalmaster.image
-        );
+      if (professional.image) {
+        const oldPath = path.join(__dirname, "../public/professionalmaster/", professional.image);
         if (fs.existsSync(oldPath)) {
           try {
             fs.unlinkSync(oldPath);
-            console.log("🗑️ Old image deleted:", professionalmaster.image);
+            console.log("🗑️ Old image deleted");
           } catch (err) {
             console.error("❌ Failed to delete old image:", err);
           }
         }
       }
-      professionalmaster.image = newImageFile.filename;
+      professional.image = newImageFile.filename;
     }
 
-    // ✅ SAVE profession data
-    await professionalmaster.save();
-    console.log("✅ Profession saved successfully");
+    // Save professional
+    await professional.save();
+    console.log("✅ Professional saved successfully");
 
-    // 🔥 SYNC CELEBRITIES if templates changed
-    const newTemplates = professionalmaster.sectiontemplate.map(t => t.toString());
-    
-    // Check if templates were added or modified
-    const templatesChanged = 
+    // Sync celebrities if templates changed
+    const newTemplates = professional.sectiontemplate.map((t) => t.toString());
+    const templatesChanged =
       newTemplates.length !== oldTemplates.length ||
-      newTemplates.some(t => !oldTemplates.includes(t));
+      newTemplates.some((t) => !oldTemplates.includes(t));
 
     if (templatesChanged && newTemplates.length > 0) {
       console.log("🔄 Templates changed, syncing celebrities...");
-      console.log("Old templates:", oldTemplates);
-      console.log("New templates:", newTemplates);
-      
       try {
-        await syncCelebritySections(professionalmasterId, newTemplates);
+        await syncCelebritySections(id, newTemplates);
         console.log("✅ Celebrity sections synced successfully");
       } catch (syncError) {
-        console.error("❌ Sync failed but profession saved:", syncError);
-        // Don't fail the request, profession is already saved
+        console.error("❌ Sync failed but professional saved:", syncError);
       }
-    } else {
-      console.log("⏭️  No template changes detected, skipping sync");
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      msg: "Profession master updated successfully",
-      data: professionalmaster,
+      message: "Professional master updated successfully",
+      data: {
+        professional,
+        professionalId: professional._id.toString(),
+      },
     });
   } catch (error) {
-    console.error("❌ Error updating Profession master:", error);
-    res.status(500).json({
-      success: false,
-      msg: "Server error",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-// Update status
-const updateStatus = async (req, res) => {
+// PATCH: Update status
+const updateProfessionalStatus = async (req, res, next) => {
   try {
     const { status, id } = req.body;
 
-    await Professionalmaster.updateOne(
-      { _id: id },
-      { $set: { status } },
+    // Validation
+    if (!id) {
+      throw createHttpError(400, "Professional ID is required");
+    }
+
+    if (status === undefined || status === null) {
+      throw createHttpError(400, "Status is required");
+    }
+
+    const professional = await Professionalmaster.findByIdAndUpdate(
+      id,
+      { status },
       { new: true }
     );
 
-    res.status(200).json({ msg: "Status updated successfully" });
-  } catch (error) {
-    res.status(500).json({ msg: "Server Error", error: error.message });
-  }
-};
-
-// Update professionalmaster
-
-// Get all professionalmasters
-const getdata = async (req, res) => {
-  try {
-    const response = await Professionalmaster.find();
-    if (!response || response.length === 0) {
-      return res.status(404).json({ msg: "No data found" });
+    if (!professional) {
+      throw createHttpError(404, "Professional master not found");
     }
 
-    res.status(200).json({ msg: response });
-  } catch (error) {
-    res.status(500).json({ msg: "Server Error", error: error.message });
-  }
-};
-
-// Delete professionalmaster
-const deleteprofessional = async (req, res) => {
-  try {
-    const id = req.params.id;
-    const response = await Professionalmaster.findOneAndDelete({ _id: id });
-
-    if (!response) {
-      return res.status(404).json({ msg: "No data found" });
-    }
-
-    res.status(200).json({ msg: "professionalmaster deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ msg: "Server Error", error: error.message });
-  }
-};
-
-// Get professionalmaster by ID
-const getprofessionalByid = async (req, res) => {
-  try {
-    const professionalmaster = await Professionalmaster.findOne({
-      _id: req.params.id,
+    return res.status(200).json({
+      success: true,
+      message: "Status updated successfully",
+      data: {
+        professionalId: professional._id.toString(),
+        status: professional.status,
+      },
     });
-
-    if (!professionalmaster) {
-      return res.status(404).json({ msg: "No data found" });
-    }
-
-    res.status(200).json({ msg: professionalmaster });
   } catch (error) {
-    res.status(500).json({ msg: "Server Error", error: error.message });
+    next(error);
   }
 };
 
-// Export all
-module.exports = {
-  addprofessional,
-  updateStatus,
-  updateprofessional,
-  getdata,
-  deleteprofessional,
-  getprofessionalByid,
-  SectionTemplateOptions,
+// GET: Fetch all professionals
+// GET: Fetch all professionals
+const getAllProfessionals = async (req, res, next) => {
+  try {
+    const professionals = await Professionalmaster.find();
 
-  syncCelebritySections
+    return res.status(200).json({
+      success: true,
+      message: "Professionals fetched successfully",
+      data: professionals,
+      count: professionals.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET: Fetch professional by ID
+const getProfessionalById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      throw createHttpError(400, "Professional ID is required");
+    }
+
+    const professional = await Professionalmaster.findById(id);
+
+    if (!professional) {
+      throw createHttpError(404, "Professional master not found");
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Professional fetched successfully",
+      data: professional,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// DELETE: Delete professional
+const deleteProfessional = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      throw createHttpError(400, "Professional ID is required");
+    }
+
+    const professional = await Professionalmaster.findByIdAndDelete(id);
+
+    if (!professional) {
+      throw createHttpError(404, "Professional master not found");
+    }
+
+    // Delete image if exists
+    if (professional.image) {
+      const imagePath = path.join(__dirname, "../public/professionalmaster/", professional.image);
+      if (fs.existsSync(imagePath)) {
+        try {
+          fs.unlinkSync(imagePath);
+          console.log("🗑️ Image deleted");
+        } catch (err) {
+          console.error("❌ Failed to delete image:", err);
+        }
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Professional master deleted successfully",
+      data: {
+        professionalId: id,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==================== EXPORTS ====================
+
+module.exports = {
+  getSectionTemplateOptions,
+  createProfessional,
+  updateProfessional,
+  updateProfessionalStatus,
+  getAllProfessionals,
+  getProfessionalById,
+  deleteProfessional,
+  syncCelebritySections,
 };

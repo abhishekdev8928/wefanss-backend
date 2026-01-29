@@ -2,13 +2,16 @@ const RoleModel = require("../models/role-model");
 const Privilege = require("../models/previlege-model");
 const createHttpError = require("http-errors");
 
-const { OPERATIONS, RESOURCES } = require('../utils/constant/privilege-constant');
+const { OPERATIONS, RESOURCES , PRIVILEGE_RESOURCES } = require('../utils/constant/privilege-constant');
 
 
+
+
+// Get default operations based on resource type
 const getDefaultOperations = (resource) => {
   const operations = {};
-
-  if (resource === RESOURCES.CELEBRITY) {
+  
+  if (resource === PRIVILEGE_RESOURCES.CELEBRITY) {
     operations[OPERATIONS.ADD] = false;
     operations[OPERATIONS.EDIT] = false;
     operations[OPERATIONS.DELETE] = false;
@@ -47,13 +50,11 @@ const createRole = async (req, res, next) => {
       is_system: false 
     });
 
-    // ✅ Create default permissions - EXCLUDE profession
-    const defaultPermissions = Object.values(RESOURCES)
-      .filter(resource => resource !== RESOURCES.PROFESSION) // 🔥 Remove profession
-      .map(resource => ({
-        resource,
-        operations: getDefaultOperations(resource)
-      }));
+    // ✅ Create default permissions using PRIVILEGE_RESOURCES
+    const defaultPermissions = Object.values(PRIVILEGE_RESOURCES).map(resource => ({
+      resource,
+      operations: getDefaultOperations(resource)
+    }));
 
     await Privilege.create({
       role: name.trim(),

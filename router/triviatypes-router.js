@@ -16,7 +16,7 @@ router.use(authenticate);
  */
 router.post(
   "/addTriviaTypes",
-  checkPrivilege(RESOURCES.TRIVIA_TYPES, OPERATIONS.ADD),
+  checkPrivilege(RESOURCES.TRIVIA_TYPE, OPERATIONS.ADD),
   TriviaTypes.addTriviaTypes
 );
 
@@ -28,7 +28,7 @@ router.post(
  */
 router.get(
   "/getdataTriviaTypes",
-  checkPrivilege(RESOURCES.TRIVIA_TYPES, OPERATIONS.ADD), // ✅ ADD permission includes read access
+  checkPrivilege(RESOURCES.TRIVIA_TYPE, OPERATIONS.ADD), // ✅ ADD permission includes read access
   TriviaTypes.getdataTriviaTypes
 );
 
@@ -40,7 +40,7 @@ router.get(
  */
 router.get(
   "/getTriviaTypesByid/:id",
-  checkPrivilege(RESOURCES.TRIVIA_TYPES, OPERATIONS.ADD), // ✅ ADD permission includes read access
+  checkPrivilege(RESOURCES.TRIVIA_TYPE, OPERATIONS.ADD), // ✅ ADD permission includes read access
   TriviaTypes.getTriviaTypesByid
 );
 
@@ -53,7 +53,7 @@ router.get(
  */
 router.patch(
   "/updateTriviaTypes/:id",
-  checkPrivilege(RESOURCES.TRIVIA_TYPES, OPERATIONS.EDIT),
+  checkPrivilege(RESOURCES.TRIVIA_TYPE, OPERATIONS.EDIT),
   TriviaTypes.updateCategory
 );
 
@@ -65,7 +65,7 @@ router.patch(
  */
 router.delete(
   "/deleteTriviaTypes/:id",
-  checkPrivilege(RESOURCES.TRIVIA_TYPES, OPERATIONS.DELETE),
+  checkPrivilege(RESOURCES.TRIVIA_TYPE, OPERATIONS.DELETE),
   TriviaTypes.deleteTriviaTypes
 );
 
@@ -77,7 +77,7 @@ router.delete(
  */
 router.patch(
   "/update-statusTriviaTypes",
-  checkPrivilege(RESOURCES.TRIVIA_TYPES, OPERATIONS.EDIT),
+  checkPrivilege(RESOURCES.TRIVIA_TYPE, OPERATIONS.EDIT),
   TriviaTypes.updateStatusCategory
 );
 
@@ -88,7 +88,7 @@ router.patch(
  */
 router.get(
   "/categoryOptions",
-  checkPrivilege(RESOURCES.TRIVIA_TYPES, OPERATIONS.ADD), // ✅ ADD permission includes read access
+  checkPrivilege(RESOURCES.TRIVIA_TYPE, OPERATIONS.ADD), // ✅ ADD permission includes read access
   TriviaTypes.categoryOptions
 );
 

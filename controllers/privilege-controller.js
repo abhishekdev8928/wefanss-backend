@@ -3,42 +3,52 @@ const RoleModel = require("../models/role-model");
 const createHttpError = require("http-errors");
 const mongoose = require("mongoose");
 const { OPERATIONS, RESOURCES } = require('../utils/constant/privilege-constant');
+const { STATIC_MODULE_ROLE } = require("../config/role-config");
 
 /**
  * Get current user's privileges
  */
+
 const getUserPrivileges = async (req, res, next) => {
+
+  const EXCLUDE_MODULE = ["profession"]
   try {
-    const { roleId } = req.user;
+    const { roleId, roleName, isSystemRole } = req.user;
 
     // Validate roleId
     if (!roleId || !mongoose.Types.ObjectId.isValid(roleId)) {
       throw createHttpError(400, "Invalid role ID format");
     }
 
-    const role = await RoleModel.findById(roleId)
-      .select("name slug status")
-      .lean();
-
-    if (!role) {
-      throw createHttpError(404, "Role not found");
-    }
+    const role = {
+      _id: roleId,
+      name: roleName,
+      is_system: isSystemRole
+    };
 
     const privilegeData = await Privilege.findOne({
       roleId,
       isActive: true
     }).select("permissions isActive").lean();
 
+    // ✅ Get static modules for system roles - SIMPLE!
+    let staticModules = [];
+    if (role.is_system && STATIC_MODULE_ROLE[roleName]) {
+      staticModules = STATIC_MODULE_ROLE[roleName];
+    }
+
     // ✅ If no privilege record found or permissions empty
     if (!privilegeData || !privilegeData.permissions || privilegeData.permissions.length === 0) {
       return res.status(200).json({
         success: true,
-        message: "No privileges assigned to this role",
+        message: role.is_system 
+          ? "System role with default modules" 
+          : "No privileges assigned to this role",
         data: {
           role,
-          hasPermissions: false,
+          hasPermissions: staticModules.length > 0,
           isActive: privilegeData?.isActive || false,
-          accessibleModules: [],
+          accessibleModules: staticModules,
           permissions: []
         }
       });
@@ -50,8 +60,16 @@ const getUserPrivileges = async (req, res, next) => {
       operations: perm.operations ? Object.fromEntries(Object.entries(perm.operations)) : {}
     }));
 
-    // ✅ Fast module-level access list
-    const accessibleModules = privilegeData.permissions.map(p => p.resource);
+    // ✅ Only include modules where at least one operation is true
+    const dynamicModules = privilegeData.permissions
+      .filter(p => {
+        if (!p.operations) return false;
+        return Object.values(p.operations).some(Boolean);
+      })
+      .map(p => p.resource);
+
+    // ✅ Merge static modules (for system roles) with dynamic modules
+    const accessibleModules = [...new Set([...staticModules, ...dynamicModules])];
 
     return res.status(200).json({
       success: true,
@@ -71,11 +89,14 @@ const getUserPrivileges = async (req, res, next) => {
   }
 };
 
+
 /**
  * Get privileges by role ID
  * ✅ Same response structure as getUserPrivileges
  */
 const getPrivilegesByRoleId = async (req, res, next) => {
+  const EXCLUDE_MODULES = ["profession"];
+  
   try {
     const { id } = req.params;
 
@@ -123,29 +144,53 @@ const getPrivilegesByRoleId = async (req, res, next) => {
       return res.status(200).json(response);
     }
 
-    // ✅ Convert Map operations to plain objects for response
-    const formattedPermissions = privilegeData.permissions.map(perm => ({
-      resource: perm.resource,
-      operations: perm.operations ? Object.fromEntries(Object.entries(perm.operations)) : {}
-    }));
+    // ✅ Filter out excluded modules
+    const filteredPermissions = privilegeData.permissions.filter(perm => {
+      if (!perm?.resource) return false;
+      return !EXCLUDE_MODULES.includes(perm.resource.toLowerCase());
+    });
 
-    // ✅ Fast module-level access list
-    const accessibleModules = privilegeData.permissions.map(p => p.resource);
+    // ✅ Format ALL permissions - send everything to frontend
+    const formattedPermissions = filteredPermissions.map(perm => {
+      let operations = {};
+      
+      if (perm.operations instanceof Map) {
+        operations = Object.fromEntries(perm.operations);
+      } else if (perm.operations && typeof perm.operations === 'object') {
+        operations = { ...perm.operations };
+      }
+      
+      // Check if at least one operation is true
+      const hasActiveOperation = Object.values(operations).some(value => value === true);
+      
+      return {
+        resource: perm.resource,
+        operations,
+        isActive: hasActiveOperation // Frontend ke liye flag
+      };
+    });
+
+    // ✅ Get only modules with active permissions (for accessibleModules list)
+    const accessibleModules = formattedPermissions
+      .filter(perm => perm.isActive)
+      .map(perm => perm.resource);
 
     const response = {
       success: true,
       message: "Privileges retrieved successfully",
       data: {
         role,
-        hasPermissions: true,
+        hasPermissions: formattedPermissions.length > 0,
         isActive: privilegeData.isActive,
         isLocked: privilegeData.isLocked,
-        accessibleModules,
-        permissions: formattedPermissions
+        accessibleModules, // Only active modules
+        permissions: formattedPermissions, // ALL permissions with isActive flag
+        totalPermissions: formattedPermissions.length,
+        activePermissions: accessibleModules.length
       }
     };
 
-    console.log("📤 Sending response (with permissions):", JSON.stringify(response, null, 2));
+    console.log("📤 Sending final response:", JSON.stringify(response, null, 2));
     return res.status(200).json(response);
     
   } catch (error) {
@@ -153,7 +198,6 @@ const getPrivilegesByRoleId = async (req, res, next) => {
     next(error);
   }
 };
-
 /**
  * Set/Update privileges for a role
  * ✅ Same response structure as getUserPrivileges

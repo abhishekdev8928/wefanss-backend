@@ -40,7 +40,7 @@ const upload = multer({ storage: storage });
  */
 router.post(
   "/addSocialLink",
-  checkPrivilege(RESOURCES.SOCIAL_LINKS, OPERATIONS.ADD),
+  checkPrivilege(RESOURCES.SOCIAL_LINK, OPERATIONS.ADD),
   SocialLink.addSocialLink
 );
 
@@ -52,7 +52,7 @@ router.post(
  */
 router.get(
   "/getdataSocialLink",
-  checkPrivilege(RESOURCES.SOCIAL_LINKS, OPERATIONS.ADD), // ✅ ADD permission includes read access
+  checkPrivilege(RESOURCES.SOCIAL_LINK, OPERATIONS.ADD), // ✅ ADD permission includes read access
   SocialLink.getdataSocialLink
 );
 
@@ -64,7 +64,7 @@ router.get(
  */
 router.get(
   "/getSocialLinkByid/:id",
-  checkPrivilege(RESOURCES.SOCIAL_LINKS, OPERATIONS.ADD), // ✅ ADD permission includes read access
+  checkPrivilege(RESOURCES.SOCIAL_LINK, OPERATIONS.ADD), // ✅ ADD permission includes read access
   SocialLink.getSocialLinkByid
 );
 
@@ -77,7 +77,7 @@ router.get(
  */
 router.patch(
   "/updateSocialLink/:id",
-  checkPrivilege(RESOURCES.SOCIAL_LINKS, OPERATIONS.EDIT),
+  checkPrivilege(RESOURCES.SOCIAL_LINK, OPERATIONS.EDIT),
   SocialLink.updateCategory
 );
 
@@ -89,7 +89,7 @@ router.patch(
  */
 router.delete(
   "/deleteSocialLink/:id",
-  checkPrivilege(RESOURCES.SOCIAL_LINKS, OPERATIONS.DELETE),
+  checkPrivilege(RESOURCES.SOCIAL_LINK, OPERATIONS.DELETE),
   SocialLink.deleteSocialLink
 );
 
@@ -101,7 +101,7 @@ router.delete(
  */
 router.patch(
   "/update-statuscategory",
-  checkPrivilege(RESOURCES.SOCIAL_LINKS, OPERATIONS.EDIT),
+  checkPrivilege(RESOURCES.SOCIAL_LINK, OPERATIONS.EDIT),
   SocialLink.updateStatusCategory
 );
 

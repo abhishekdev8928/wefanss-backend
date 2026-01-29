@@ -20,7 +20,7 @@ const path = require("path");
 
 
 
-const { syncCelebritySections } = require("../controllers/professionalmaster-controller"); 
+const { syncCelebritySections } = require("../controllers/profession-controller"); 
 
 const addcelebraty = async (req, res) => {
   try {
